@@ -1,18 +1,16 @@
 from mininet.net import Mininet
-from mininet.node import OVSSwitch
+from mininet.node import OVSController
 from mininet.cli import CLI
 from mininet.log import setLogLevel
-from mininet.link import TCLink
+import time
 
-def main():
+
+def create_topology():
 
     # Create Mininet
-    net = Mininet(
-        switch=OVSSwitch,
-        link=TCLink
-    )
+    net = Mininet(controller=OVSController)
 
-    print("Creating hosts...")
+    print("\nCreating Mininet topology...")
 
     # Create two hosts
     h1 = net.addHost('h1', ip='10.0.0.1/24')
@@ -28,62 +26,61 @@ def main():
     # Start network
     net.start()
 
-    print("\n================================")
-    print("Mininet network started!")
-    print("================================")
+    print("\n========================================")
+    print("Mininet topology started")
+    print("========================================")
     print("h1 IP: 10.0.0.1")
     print("h2 IP: 10.0.0.2")
-    print("UDP server port: 12000")
-    print("================================\n")
+    print("========================================\n")
 
     # Test connectivity
-    print("Testing connection between h1 and h2...\n")
+    print("Testing connectivity between h1 and h2...\n")
+    net.pingAll()
 
-    result = h1.cmd('ping -c 2 10.0.0.2')
+    print("\n========================================")
+    print("Starting UDP Server on h1")
+    print("Server: 127.0.0.1:12000")
+    print("========================================\n")
 
-    print(result)
+    # Start the UDP server on h1.
+    # Because the server binds to 127.0.0.1,
+    # it must run on the same host as the client.
+    h1.cmd(
+        'python3 server.py > server_output.txt 2>&1 &'
+    )
 
-    # Start server on h2
-    print("Starting UDP server on h2...\n")
-
-    h2.cmd('python3 server.py > server_output.txt 2>&1 &')
-
-    # Give server a moment to start
-    import time
     time.sleep(1)
 
-    # Start client on h1
-    print("Starting UDP client on h1...\n")
+    print("========================================")
+    print("Starting UDP Client on h1")
+    print("========================================\n")
 
-    client_output = h1.cmd('python3 client.py')
+    # Run the client on h1
+    client_output = h1.cmd(
+        'python3 client.py'
+    )
 
-    print("================================")
-    print("CLIENT OUTPUT")
-    print("================================")
-
+    # Display client output
+    print("========== CLIENT OUTPUT ==========")
     print(client_output)
 
-    # Show server output
-    print("================================")
-    print("SERVER OUTPUT")
-    print("================================")
+    # Display server output
+    print("========== SERVER OUTPUT ==========")
+    print(
+        h1.cmd('cat server_output.txt')
+    )
 
-    server_output = h2.cmd('cat server_output.txt')
-
-    print(server_output)
+    print("========================================")
+    print("UDP Pinger finished")
+    print("========================================")
 
     # Open Mininet CLI
-    print("================================")
-    print("Entering Mininet CLI")
-    print("Type 'exit' to finish.")
-    print("================================\n")
-
     CLI(net)
 
-    # Stop network
+    # Stop network after exiting CLI
     net.stop()
 
 
 if __name__ == '__main__':
     setLogLevel('info')
-    main()
+    create_topology()
