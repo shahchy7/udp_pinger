@@ -1,37 +1,53 @@
 from socket import *
 import time
+
 def main():
-	#create a udp socket with SOCK_DGRAM
-	client_sd = socket(AF_INET, SOCK_DGRAM)
-	server_ip = '127.0.0.1'
-	port = 12000
 
-	#wait at most 1 second for a reply
-	client_sd.settimeout(1.0)
+    # Create UDP socket
+    client_sd = socket(AF_INET, SOCK_DGRAM)
 
-	#send 10 pings with sequence numbers 1 to 10
-	for seq in range(1, 10+1):
-		start_time = time.time()
-		message = "Ping " + str(seq) + " " + str(start_time)
+    # h2's IP address
+    server_ip = '10.0.0.2'
+    port = 12000
 
-		try:
-			#send data to the server's address
-			client_sd.sendto(message.encode(), (server_ip, port))
+    # Wait maximum 1 second for a reply
+    client_sd.settimeout(1.0)
 
-			#read the echoed data from the server
-			received_line, server_addr = client_sd.recvfrom(1024)
-			end_time = time.time()
+    # Send 10 pings
+    for seq in range(1, 11):
 
-			#rtt = time after receive - time before send
-			rtt = end_time - start_time
-			print(f"Reply from {server_addr[0]}: {received_line.decode()}")
-			print(f"RTT: {rtt} seconds")
-		except timeout:
-			#no reply within 1 second
-			print(f"Request timed out")
+        start_time = time.time()
 
-	#closing the socket
-	client_sd.close()
+        message = "Ping " + str(seq) + " " + str(start_time)
+
+        try:
+            # Send message to h2
+            client_sd.sendto(
+                message.encode(),
+                (server_ip, port)
+            )
+
+            # Wait for server's reply
+            received_line, server_addr = client_sd.recvfrom(1024)
+
+            end_time = time.time()
+
+            # Calculate Round Trip Time
+            rtt = end_time - start_time
+
+            print(
+                "Reply from",
+                server_addr[0] + ":",
+                received_line.decode()
+            )
+
+            print("RTT:", rtt, "seconds")
+
+        except timeout:
+            print("Request timed out")
+
+    client_sd.close()
+
 
 if __name__ == '__main__':
-	main()
+    main()
